@@ -38,11 +38,22 @@ export type ResearchAssets={
 };
 export type WorkflowStage={name:string;status:string;artifact?:string|null;error?:string|null;meta?:Record<string,unknown>|null};
 export type RunProgress={completed:number;total:number};
+export type HumanReviewPayload={
+  workflow?:string;
+  node?:string;
+  reason?:string;
+  artifact?:string|null;
+  retry_from?:string;
+  continue_to?:string;
+  allowed_actions?:string[];
+};
 export type WorkflowRun={
   run_id:string;
   trade_date:number;
   knowledge_mode?:'current'|'pit';
   status:string;
+  runtime?:string;
+  langgraph_thread_id?:string|null;
   current_stage?:string|null;
   current_workflow?:string|null;
   current_node?:string|null;
@@ -52,6 +63,7 @@ export type WorkflowRun={
   updated_at?:number|null;
   finished_at?:number|null;
   resume_count?:number;
+  review_payload?:HumanReviewPayload|null;
   error?:string|null;
   run_dir?:string;
   research_assets?:ResearchAssets;
@@ -70,6 +82,9 @@ export type RunEvent={
   attempt?:number;
   duration_ms?:number;
   repair_round?:number;
+  runtime?:string;
+  thread_id?:string;
 };
 export type RunEventsResponse={run_id:string;after:number;events:RunEvent[];next_after:number};
+export type ResumeDecision={action:'retry'|'continue_degraded'|'stop';note?:string};
 export type ReportResponse={run:WorkflowRun;markdown:string};

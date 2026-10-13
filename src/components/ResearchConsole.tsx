@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, BookOpenText, BrainCircuit, GitBranch, Play, RefreshCw, RotateCcw } from 'lucide-react';
+import { Activity, BookOpenText, BrainCircuit, GitBranch, Play, RefreshCw, RotateCcw, ShieldAlert } from 'lucide-react';
 import { api } from '../api';
-import type { RegisteredWorkflow, ReportResponse, ResearchAssets, RunEvent, WorkflowRun } from '../types';
+import type { RegisteredWorkflow, ReportResponse, ResearchAssets, ResumeDecision, RunEvent, WorkflowRun } from '../types';
 import { MarkdownReport } from './MarkdownReport';
 
-const TERMINAL = new Set(['PASS', 'PASS_DEGRADED', 'FAIL', 'REVIEW_REQUIRED']);
+const STOPPED = new Set(['PASS', 'PASS_DEGRADED', 'FAIL', 'REVIEW_REQUIRED', 'WAITING_REVIEW']);
+const COMPLETE = new Set(['PASS', 'PASS_DEGRADED', 'FAIL']);
 
 function formatClock(ts?: number | null) {
   if (!ts) return '';
@@ -18,6 +19,7 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [assets, setAssets] = useState<ResearchAssets | null>(null);
   const [running, setRunning] = useState(false);
+  const [reviewNote, setReviewNote] = useState('');
   const [error, setError] = useState('');
   const eventCursor = useRef(0);
 
@@ -29,12 +31,12 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
   };
 
   useEffect(() => {
-    setRun(null); setEvents([]); eventCursor.current = 0; setRunning(false); setError('');
+    setRun(null); setEvents([]); eventCursor.current = 0; setRunning(false); setReviewNote(''); setError('');
     void loadReport(); void loadAssets();
   }, [date]);
 
   useEffect(() => {
-    if (!run?.run_id || TERMINAL.has(run.status)) return;
+    if (!run?.run_id || STOPPED.has(run.status)) return;
     const runId = run.run_id;
     let stopped = false;
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -49,14 +51,16 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
         setRun(next);
         if (eventPage.events.length) {
           eventCursor.current = eventPage.next_after;
-          setEvents(previous => [...previous, ...eventPage.events].slice(-120));
+          setEvents(previous => [...previous, ...eventPage.events].slice(-160));
         }
-        if (TERMINAL.has(next.status)) {
+        if (STOPPED.has(next.status)) {
           stopped = true;
           if (timer) clearInterval(timer);
           setRunning(false);
-          await loadReport();
-          onComplete?.();
+          if (COMPLETE.has(next.status)) {
+            await loadReport();
+            onComplete?.();
+          }
         }
       } catch (cause) {
         if (!stopped) setError(`运行状态读取失败：${String(cause)}`);
@@ -69,7 +73,7 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
   }, [run?.run_id, run?.status]);
 
   const execute = async () => {
-    setRunning(true); setError(''); setEvents([]); eventCursor.current = 0;
+    setRunning(true); setError(''); setEvents([]); setReviewNote(''); eventCursor.current = 0;
     try {
       const queued = await api.runResearch(date, mode);
       setRun(queued);
@@ -78,12 +82,13 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
     }
   };
 
-  const resume = async () => {
+  const resume = async (decision?: ResumeDecision) => {
     if (!run?.run_id) return;
     setRunning(true); setError('');
     try {
-      const resumed = await api.resumeWorkflow(run.run_id);
+      const resumed = await api.resumeWorkflow(run.run_id, decision);
       setRun(resumed);
+      if (decision) setReviewNote('');
     } catch (cause) {
       setError(String(cause)); setRunning(false);
     }
@@ -105,16 +110,17 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
 
   const progress = run?.progress;
   const progressPct = progress?.total ? Math.min(100, Math.round(progress.completed / progress.total * 100)) : 0;
-  const canResume = Boolean(run?.run_id && ['FAIL', 'REVIEW_REQUIRED'].includes(run.status));
+  const canRecoverCrash = Boolean(run?.run_id && ['FAIL', 'REVIEW_REQUIRED'].includes(run.status) && !run.review_payload);
+  const waitingReview = run?.status === 'WAITING_REVIEW' || Boolean(run?.review_payload);
   const stages = run?.stages || [];
 
   return (
     <section className="panel research-console" aria-label="多智能体研究中心">
       <div className="panel-head">
         <div>
-          <span className="eyebrow">DURABLE MULTI-AGENT ORCHESTRATOR / LIVE RUN CENTER</span>
+          <span className="eyebrow">LANGGRAPH MULTI-AGENT ORCHESTRATOR / LIVE RUN CENTER</span>
           <h2>统一研究编排与运行中心</h2>
-          <p className="focus-explainer">Registry 负责发现工作流；统一 Runtime 负责 Skill、Validator、Gate、Projection、断点和事件。任务启动后可实时看到执行到哪个节点。</p>
+          <p className="focus-explainer">Manifest 经 Registry 编译为 LangGraph StateGraph；checkpoint、断点恢复和人工 interrupt 由 LangGraph 管理，页面实时展示当前 workflow、node 与动作。</p>
         </div>
         <BrainCircuit size={24} />
       </div>
@@ -147,13 +153,13 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
           <button className={mode === 'pit' ? 'active' : ''} onClick={() => setMode('pit')} type="button" disabled={running}>严格 PIT 回放</button>
         </div>
         <div className="run-actions">
-          {canResume && <button className="resume-research" type="button" onClick={() => void resume()} disabled={running}><RotateCcw size={16} />从断点恢复</button>}
+          {canRecoverCrash && <button className="resume-research" type="button" onClick={() => void resume()} disabled={running}><RotateCcw size={16} />恢复 LangGraph Thread</button>}
           <button className="run-research" type="button" onClick={() => void execute()} disabled={running || workflows.some(item => !item.ready)}>
-            {running ? <RefreshCw size={17} className="spin" /> : <Play size={17} />}{running ? '研究图执行中' : '运行完整研究图'}
+            {running ? <RefreshCw size={17} className="spin" /> : <Play size={17} />}{running ? 'LangGraph 执行中' : '运行完整研究图'}
           </button>
         </div>
       </div>
-      <p className="mode-help">{mode === 'current' ? '允许当前已抓取证据进入真实发布时间线。' : '同时约束 known_at；晚抓数据不会泄露到历史决策。'} 断点只复用同一 run_id 下 fingerprint 与 SHA 均匹配的已完成节点。</p>
+      <p className="mode-help">{mode === 'current' ? '允许当前已抓取证据进入真实发布时间线。' : '同时约束 known_at；晚抓数据不会泄露到历史决策。'} 执行断点由 persistent LangGraph checkpointer 保存，RunStore 只负责可观测审计。</p>
 
       {error && <div className="error">{error}</div>}
 
@@ -171,9 +177,26 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
           <div><small>STAGE</small><strong>{run.current_stage || '—'}</strong></div>
           <div><small>WORKFLOW</small><strong>{run.current_workflow || '—'}</strong></div>
           <div><small>NODE</small><strong>{run.current_node || '—'}</strong></div>
-          <div className="current-action"><small>正在做什么</small><strong>{run.current_action || (TERMINAL.has(run.status) ? '运行结束' : '准备中')}</strong></div>
+          <div className="current-action"><small>正在做什么</small><strong>{run.current_action || (STOPPED.has(run.status) ? '运行暂停/结束' : '准备中')}</strong></div>
         </div>
-        {run.error && <div className="run-error">{run.error}</div>}
+        {run.langgraph_thread_id && <div className="thread-id"><small>LANGGRAPH THREAD</small><code>{run.langgraph_thread_id}</code></div>}
+        {run.error && !waitingReview && <div className="run-error">{run.error}</div>}
+
+        {waitingReview && <div className="human-review-panel">
+          <div className="human-review-title"><ShieldAlert size={18}/><div><strong>需要人工审核</strong><small>LangGraph interrupt 已保存当前状态，选择动作后从原 thread 继续。</small></div></div>
+          <div className="human-review-context">
+            <span><small>WORKFLOW</small><b>{run.review_payload?.workflow || run.current_workflow || '—'}</b></span>
+            <span><small>NODE</small><b>{run.review_payload?.node || run.current_node || '—'}</b></span>
+          </div>
+          <p>{run.review_payload?.reason || run.error || 'Validator 要求人工确认。'}</p>
+          <textarea value={reviewNote} onChange={event => setReviewNote(event.target.value)} placeholder="可选：填写人工审核备注" rows={2}/>
+          <div className="human-review-actions">
+            <button type="button" disabled={running} onClick={() => void resume({action:'retry', note:reviewNote})}><RotateCcw size={15}/>补证据 / 重试</button>
+            <button type="button" disabled={running} onClick={() => void resume({action:'continue_degraded', note:reviewNote})}>人工确认继续</button>
+            <button className="danger" type="button" disabled={running} onClick={() => void resume({action:'stop', note:reviewNote})}>停止工作流</button>
+          </div>
+        </div>}
+
         {events.length > 0 && <div className="run-events">
           <div className="event-title"><strong>运行事件</strong><small>最近 {Math.min(events.length, 12)} 条</small></div>
           {events.slice(-12).reverse().map(event => <div className="event-row" key={event.seq}>
@@ -192,7 +215,7 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
 
       <div className="report-view">
         <div className="report-title"><BookOpenText size={18} /><strong>页面研究报告</strong><span>{report?.run?.run_id ? report.run.run_id.slice(0, 8) : '尚未生成'}</span></div>
-        {report?.markdown ? <div className="report-content"><MarkdownReport markdown={report.markdown} /></div> : <div className="report-empty">运行完整研究图后，报告会直接出现在这里；执行过程中可在上方实时查看节点状态。</div>}
+        {report?.markdown ? <div className="report-content"><MarkdownReport markdown={report.markdown} /></div> : <div className="report-empty">运行完整研究图后，报告会直接出现在这里；执行过程中可在上方实时查看 LangGraph 节点状态。</div>}
       </div>
     </section>
   );
