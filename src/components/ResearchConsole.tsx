@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BookOpenText, BrainCircuit, Play, RefreshCw } from 'lucide-react';
 import { api } from '../api';
 import type { ReportResponse, WorkflowRun } from '../types';
+import { MarkdownReport } from './MarkdownReport';
 
 export function ResearchConsole({ date, onComplete }: { date: number; onComplete?: () => void }) {
   const [mode, setMode] = useState<'current' | 'pit'>('current');
@@ -47,7 +48,7 @@ export function ResearchConsole({ date, onComplete }: { date: number; onComplete
       {run && <div className="stage-strip">{run.stages.map(stage => <span className={`stage-pill ${stage.status.toLowerCase()}`} key={stage.name}><b>{stage.name}</b>{stage.status}</span>)}</div>}
       <div className="report-view">
         <div className="report-title"><BookOpenText size={18} /><strong>页面研究报告</strong><span>{report?.run?.run_id ? report.run.run_id.slice(0, 8) : '尚未生成'}</span></div>
-        {report?.markdown ? <pre>{report.markdown}</pre> : <div className="report-empty">选择日期后运行研究，报告会直接出现在这里。</div>}
+        {report?.markdown ? <div className="report-content"><MarkdownReport markdown={report.markdown} /></div> : <div className="report-empty">选择日期后运行研究，报告会直接出现在这里。</div>}
       </div>
     </section>
   );
