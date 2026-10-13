@@ -1,0 +1,48 @@
+.opportunity-panel { padding: 20px; }
+.opportunity-head { align-items: center; }
+.opportunity-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 16px; }
+.opportunity-lane { min-width: 0; border: 1px solid #27303c; border-radius: 12px; background: #0f141b; overflow: hidden; }
+.opportunity-lane-title { display: flex; align-items: center; gap: 9px; padding: 13px 14px; border-bottom: 1px solid #27303c; color: #dce3ed; }
+.opportunity-lane-title div { display: grid; gap: 1px; }
+.opportunity-lane-title small { color: #697789; font-size: 9px; letter-spacing: 1.4px; }
+.opportunity-list { display: grid; }
+.opportunity-card { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; gap: 6px 8px; align-items: center; width: 100%; padding: 12px 13px; border: 0; border-bottom: 1px solid #202833; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.opportunity-card:last-child { border-bottom: 0; }
+.opportunity-card:hover { background: #18202a; }
+.opportunity-rank { grid-row: 1 / span 2; color: #d2b76f; font-family: monospace; font-weight: 700; }
+.opportunity-company { min-width: 0; }
+.opportunity-company strong,.opportunity-company small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.opportunity-company strong { color: #f2f5f8; font-size: 13px; }
+.opportunity-company small { margin-top: 2px; color:#748194; font-size:10px; }
+.opportunity-role { justify-self:start; padding:2px 6px; border:1px solid #355b61; border-radius:999px; color:#8dd0ce; font-size:9px; }
+.opportunity-score { grid-column:3; grid-row:1 / span 2; display:grid; justify-items:end; }
+.opportunity-score b { color:#f1d28e; font-size:22px; line-height:1; font-variant-numeric:tabular-nums; }
+.opportunity-score small { margin-top:4px; color:#7f8da0; font-size:9px; }
+.opportunity-reason,.opportunity-risk { grid-column:1 / -1; padding-left:42px; font-size:10px; }
+.opportunity-reason { color:#9aa7b8; }
+.opportunity-risk { color:#687587; }
+.opportunity-risk.active { color:#d3949b; }
+.opportunity-empty { display:flex; align-items:center; justify-content:center; gap:8px; min-height:110px; color:#6f7b8c; font-size:12px; }
+.opportunity-note { margin-top:12px; font-size:11px; color:#6f7b8b; }
+.research-console { padding: 20px; }
+.research-controls { display:flex; justify-content:space-between; gap:12px; margin-top:15px; }
+.knowledge-mode { display:flex; padding:3px; border:1px solid #2b3340; border-radius:10px; background:#0e131a; }
+.knowledge-mode button { padding:7px 11px; border:0; border-radius:7px; color:#7f8b9c; background:transparent; cursor:pointer; }
+.knowledge-mode button.active { color:#e6ebf2; background:#202834; }
+.run-research { display:flex; align-items:center; gap:8px; padding:8px 13px; border:1px solid #786b4e; border-radius:9px; color:#f1d28e; background:#1b1915; cursor:pointer; }
+.run-research:disabled { opacity:.65; cursor:wait; }
+.mode-help { margin-top:8px; color:#748194; font-size:11px; }
+.stage-strip { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+.stage-pill { display:flex; gap:6px; padding:5px 8px; border:1px solid #344050; border-radius:999px; color:#9ba8b8; font-size:10px; }
+.stage-pill.pass { border-color:#315a52; color:#8bcab9; }
+.stage-pill.fail { border-color:#71464d; color:#e19aa2; }
+.stage-pill.skip { border-color:#5a5360; color:#a79daf; }
+.report-view { margin-top:15px; border:1px solid #28313d; border-radius:11px; overflow:hidden; background:#0d1218; }
+.report-title { display:flex; align-items:center; gap:8px; padding:11px 13px; border-bottom:1px solid #28313d; color:#cfd7e2; }
+.report-title span { margin-left:auto; color:#687587; font-family:monospace; font-size:10px; }
+.report-view pre { max-height:520px; overflow:auto; margin:0; padding:16px; color:#bac5d3; font:12px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; word-break:break-word; }
+.report-empty { padding:28px; color:#6e7a8b; text-align:center; font-size:12px; }
+.spin { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media (max-width: 1080px) { .opportunity-grid { grid-template-columns:1fr; } }
+@media (max-width: 720px) { .research-controls { flex-direction:column; } .run-research { justify-content:center; } }
