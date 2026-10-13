@@ -1,20 +1,42 @@
-# stock_graph_frount
+# stock_graph_frount v0.3
 
-`stock_graph` 的独立 React / TypeScript 前端。
+`stock_graph` A 股多智能体研究平台的 React / TypeScript 决策驾驶舱。
 
-后端仓库：[`gsbhx/stock_graph`](https://github.com/gsbhx/stock_graph)
+后端：`gsbhx/stock_graph` 的 `research-platform-v0.3` 分支。
 
-> 仓库名沿用 `frount`，代码内部按正常 frontend/web 命名。
+## 页面结构
 
-## 当前页面（v0.2.1）
+首页按“先结论、后证据”组织：
 
-- 今日市场概览
-- 今日市场故事图：`Event → Theme → Stock`
-- 题材结构 / 活跃度
-- 股票角色演化时间线
-- Demo / Neo4j 后端双模式兼容
+1. **市场概览**：图谱关系、活跃股票、催化事件、活跃题材；
+2. **今日机会驾驶舱**：
+   - `ATTACK` 明日进攻；
+   - `ROTATION` 轮动潜伏；
+   - `INDUSTRY` 长期产业；
+3. **研究与报告中心**：运行三套研究工作流，切换 current / PIT，直接查看日报；
+4. **全市场原始数据**：Lead Score、题材相关度、角色等底层结构；
+5. **原始领涨结构**：明确作为底层证据，不直接等价于“最有潜力”；
+6. **Evidence Graph**：事件 / 股票 / 题材关系钻取；
+7. **题材全景与角色时间线**。
 
-后续页面：题材生命周期、事件扩散、龙头层级、归因候选竞争、证据抽屉、前期核心回流、LangGraph 运行审计。
+## 为什么做三套机会排序
+
+前端不再只回答“今天谁最强”，而是拆成三个问题：
+
+```text
+ATTACK   → 明天谁最值得进攻观察？
+ROTATION → 谁正在接近轮动/回流机会？
+INDUSTRY → 哪些公司和产业值得持续跟踪？
+```
+
+这些分数来自后端确定性 Opportunity Engine，是筛选排序，不是收益预测。
+
+## current / PIT
+
+研究中心提供两种知识模式：
+
+- `current`：今天补抓到的历史新闻可以按真实 `published_at` 回填历史时间线；
+- `pit`：同时约束 `known_at`，晚抓数据不会泄露进当时的历史决策。
 
 ## 技术栈
 
@@ -25,98 +47,63 @@
 
 ## 安装
 
-建议 Node.js 22 LTS：
+建议 Node.js 22：
 
 ```bash
-git clone git@github.com:gsbhx/stock_graph_frount.git
-cd stock_graph_frount
-
-npm install
+npm ci
 ```
 
-## 配置后端地址
+配置：
 
 ```bash
 cp .env.example .env
 ```
 
-默认：
+默认后端：
 
 ```env
 VITE_API_BASE=http://localhost:8010/api
 ```
 
-如果后端部署在其他机器，改成对应地址即可。
-
-## 开发启动
-
-先确认后端已运行：
-
-```text
-http://localhost:8010/api/health
-```
-
-然后：
+开发：
 
 ```bash
 npm run dev
 ```
 
-默认页面：
-
-```text
-http://localhost:5173
-```
-
-## 构建
+构建：
 
 ```bash
 npm run build
 ```
 
-输出：
+## v0.3 后端 API
 
 ```text
-dist/
+GET  /api/dashboard/{trade_date}/overview
+GET  /api/dashboard/{trade_date}/themes
+GET  /api/dashboard/{trade_date}/stocks
+GET  /api/dashboard/{trade_date}/story
+GET  /api/dashboard/stock/{code}/timeline
+GET  /api/opportunities/{trade_date}
+POST /api/workflows/daily
+GET  /api/reports/{trade_date}
 ```
 
-预览生产构建：
+研究按钮调用：
 
-```bash
-npm run preview
+```json
+POST /api/workflows/daily
+{
+  "trade_date": 20261013,
+  "update_rag": true,
+  "knowledge_mode": "current"
+}
 ```
 
-## Docker
+## 联调
 
-```bash
-docker build \
-  --build-arg VITE_API_BASE=http://localhost:8010/api \
-  -t stock-graph-frount .
-docker run --rm -p 5173:80 stock-graph-frount
-```
-
-## 后端 API 约定
-
-当前使用：
-
-```text
-GET /api/dashboard/{trade_date}/overview
-GET /api/dashboard/{trade_date}/themes
-GET /api/dashboard/{trade_date}/story
-GET /api/dashboard/stock/{code}/timeline
-```
-
-API 基地址集中在：
-
-```text
-src/api.ts
-```
-
-不要在组件内部硬编码后端 Host。
-
-## 本地联调
-
-终端 1：后端
+后端：
 
 ```bash
 cd stock_graph
@@ -124,11 +111,19 @@ source .venv/bin/activate
 stock-graph serve --reload
 ```
 
-终端 2：前端
+前端：
 
 ```bash
 cd stock_graph_frount
 npm run dev
 ```
 
-然后访问 `http://localhost:5173`。
+访问：
+
+```text
+http://localhost:5173
+```
+
+## 当前边界
+
+前端已经完成 v0.3 信息架构，但真实研究按钮依赖后端已配置 Neo4j、MySQL、三套 Skill、Embedding（可选）和 Agent CLI。真实环境联调完成之前，本分支保持 Draft PR，不直接合并 main。
