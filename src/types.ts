@@ -6,3 +6,9 @@ export type FocusStock={code:string;name:string;role:string;lead_score?:number|s
 export type MarketStock=FocusStock & {themes:{theme_id:number;name:string;relevance?:number|string}[];theme_relevance?:number|string};
 export type Story={nodes:GNode[];edges:GEdge[];focus?:FocusStock[];mode?:string};
 export type Timeline={trade_date:number;role:string;lead_score?:number|string;confidence?:number|string;theme?:string};
+
+export type OpportunityItem={code:string;name:string;theme:string;role:string;attack_score:number;rotation_score:number;industry_score:number;confidence:number;catalyst_score:number;risk_score:number;action:'ATTACK'|'WATCH'|'OBSERVE'|string;reasons:string[];risks:string[];scoring_model:string};
+export type OpportunityResponse={trade_date:number;scoring_model:string;model_note:string;attack:OpportunityItem[];rotation:OpportunityItem[];industry:OpportunityItem[];all:OpportunityItem[]};
+export type WorkflowStage={name:string;status:string;artifact?:string|null;error?:string|null;meta?:Record<string,unknown>|null};
+export type WorkflowRun={run_id:string;trade_date:number;knowledge_mode?:'current'|'pit';status:string;run_dir?:string;stages:WorkflowStage[]};
+export type ReportResponse={run:WorkflowRun;markdown:string};
