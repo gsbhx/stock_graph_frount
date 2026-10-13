@@ -9,6 +9,7 @@ export type Timeline={trade_date:number;role:string;lead_score?:number|string;co
 
 export type OpportunityItem={code:string;name:string;theme:string;role:string;attack_score:number;rotation_score:number;industry_score:number;confidence:number;catalyst_score:number;risk_score:number;action:'ATTACK'|'WATCH'|'OBSERVE'|string;reasons:string[];risks:string[];scoring_model:string};
 export type OpportunityResponse={trade_date:number;scoring_model:string;model_note:string;attack:OpportunityItem[];rotation:OpportunityItem[];industry:OpportunityItem[];all:OpportunityItem[]};
+export type ResearchAssets={attribution:string|null;shortterm:string|null;industry:string|null;attribution_source?:string|null;shortterm_source?:string|null;industry_source?:string|null;errors?:Record<string,string>};
 export type WorkflowStage={name:string;status:string;artifact?:string|null;error?:string|null;meta?:Record<string,unknown>|null};
-export type WorkflowRun={run_id:string;trade_date:number;knowledge_mode?:'current'|'pit';status:string;run_dir?:string;stages:WorkflowStage[]};
+export type WorkflowRun={run_id:string;trade_date:number;knowledge_mode?:'current'|'pit';status:string;run_dir?:string;research_assets?:ResearchAssets;stages:WorkflowStage[]};
 export type ReportResponse={run:WorkflowRun;markdown:string};
