@@ -1,0 +1,50 @@
+.registry-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 9px 12px;
+  border: 1px solid #293340;
+  border-radius: 10px;
+  color: #8e9aab;
+  background: #0f141b;
+  font-size: 10px;
+}
+.registry-summary code {
+  min-width: 0;
+  overflow: hidden;
+  color: #718094;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.registry-summary strong {
+  margin-left: auto;
+  color: #8bcab9;
+  font-size: 10px;
+}
+.workflow-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.workflow-card {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+}
+.workflow-card code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.workflow-card .workflow-exports {
+  color: #8394aa;
+  line-height: 1.45;
+}
+.workflow-card .workflow-error {
+  padding-top: 5px;
+  border-top: 1px solid #4f2f34;
+  color: #d68f99;
+  line-height: 1.45;
+}
+@media (max-width: 720px) {
+  .registry-summary { flex-wrap: wrap; }
+  .registry-summary strong { margin-left: 0; }
+}
