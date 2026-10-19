@@ -2,7 +2,7 @@
 
 `stock_graph` A 股多智能体研究平台的 React / TypeScript 决策驾驶舱。
 
-后端：`gsbhx/stock_graph` 的 `research-platform-v0.3` 分支。
+后端：`gsbhx/stock_graph`。旧版页面合同与新业务语义图兼容需要配套安装后端 `fix/dashboard-semantic-compat-20261019` 分支。
 
 ## 页面结构
 
@@ -127,3 +127,26 @@ http://localhost:5173
 ## 当前边界
 
 前端已经完成 v0.3 信息架构，但真实研究按钮依赖后端已配置 Neo4j、MySQL、三套 Skill、Embedding（可选）和 Agent CLI。真实环境联调完成之前，本分支保持 Draft PR，不直接合并 main。
+
+## 图谱升级后的兼容与排障（2026-10）
+
+后端新图谱可能把股票-题材关系存为 `RESEARCH_THEME`，把股票角色存为 `PLAYS_ROLE`，不再保证所有交易日都有旧的 `StockThemeState/RoleState`。
+
+此修复支持新旧关系，并把首页五个 API 调用改为分区容错：`/dashboard/{date}/overview`、`themes`、`stocks`、`story`、`/opportunities/{date}`。任何一个接口失败都会明确标注，其他模块仍正常展示。
+
+后端兼容分支会优先读取旧的已验证日状态，缺失时再查询 `Attribution` 和 `RESEARCH_THEME/PLAYS_ROLE`，投影成原有 v0.3 JSON 结构。**不会修改或删除 Neo4j 数据，也不会把没有完成归因的交易日伪装成有数据**。
+
+```bash
+# 在 stock_graph 后端仓库
+git fetch origin
+git switch --track origin/fix/dashboard-semantic-compat-20261019
+PYTHONPATH=src python -m stock_graph.cli serve --reload
+
+# 在 stock_graph_frount 前端仓库的另一终端
+git fetch origin
+ git switch --track origin/fix/dashboard-semantic-compat-20261019
+npm ci
+npm run dev
+```
+
+访问 `/api/dashboard/20261013/overview` 和 `/api/dashboard/20261013/story`，检查实际研究日期是否有数据；若两个接口都返回空，确认 Neo4j 是否有当日 `Attribution` 或 `RESEARCH_THEME`（兼容层无法创造缺失的研究结论）。如果整个页面提示 `Failed to fetch`，还要核实 `VITE_API_BASE`、后端端口和 CORS 配置。
