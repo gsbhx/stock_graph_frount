@@ -35,9 +35,9 @@ export function OpportunityBoard({ data, onSelect }: { data: OpportunityResponse
                     <span className="opportunity-rank">{String(index + 1).padStart(2, '0')}</span>
                     <span className="opportunity-company"><strong>{item.name}</strong><small>{item.code} · {item.theme || '题材待补'}</small></span>
                     <span className="opportunity-role">{roleName[item.role] ?? (item.role || '角色待补')}</span>
-                    <span className="opportunity-score"><b>{item[score].toFixed(1)}</b><small>{item.action}</small></span>
-                    <span className="opportunity-reason">{item.reasons[0] ?? '等待更多结构证据'}</span>
-                    <span className={'opportunity-risk' + (item.risks.length ? ' active' : '')}>{item.risks[0] ?? '暂无显著风险标签'}</span>
+                    <span className="opportunity-score"><b>{(Number.isFinite(Number(item[score])) ? Number(item[score]).toFixed(1) : '—')}</b><small>{item.action}</small></span>
+                    <span className="opportunity-reason">{item.reasons?.[0] ?? '等待更多结构证据'}</span>
+                    <span className={'opportunity-risk' + (item.risks?.length ? ' active' : '')}>{item.risks?.[0] ?? '暂无显著风险标签'}</span>
                   </button>
                 ))}
                 {!rows.length && <div className="opportunity-empty"><Layers3 size={18} />暂无可评分数据</div>}
