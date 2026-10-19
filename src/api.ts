@@ -2,7 +2,9 @@ import type {MarketStock,Overview,Theme,Story,Timeline,OpportunityResponse,Workf
 const BASE=import.meta.env.VITE_API_BASE ?? 'http://localhost:8010/api';
 async function get<T>(path:string):Promise<T>{const r=await fetch(BASE+path);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function post<T>(path:string,body:unknown={}):Promise<T>{const r=await fetch(BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
-export type ResearchDates = { dates: number[]; latest: number | null };\nexport const api={\n  researchDates: (limit=365) => get<ResearchDates>(`/dashboard/dates?limit=${limit}`),
+export type ResearchDates = { dates: number[]; latest: number | null };
+export const api={
+  researchDates: (limit=365) => get<ResearchDates>(`/dashboard/dates?limit=${limit}`),
   overview:(d:number)=>get<Overview>(`/dashboard/${d}/overview`),
   themes:(d:number,limit=20)=>get<Theme[]>(`/dashboard/${d}/themes?limit=${limit}`),
   stocks:(d:number)=>get<MarketStock[]>(`/dashboard/${d}/stocks`),
