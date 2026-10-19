@@ -1,0 +1,58 @@
+/* Interactive research date calendar. Scoped to avoid global control styles. */
+.research-date-picker { position: relative; z-index: 20; flex-shrink: 0; }
+.controls .research-date-trigger {
+  display: flex; align-items: center; gap: 9px; white-space: nowrap;
+  min-width: 220px; height: 42px; padding: 0 12px;
+  color: #e7eaf0; background: #11151c; border: 1px solid #303847;
+  border-radius: 10px; cursor: pointer;
+}
+.controls .research-date-trigger:hover, .controls .research-date-trigger[aria-expanded="true"] {
+  border-color: #67b7c8; background: #171e29;
+}
+.research-date-trigger > svg:first-child { color: #83c7d3; }
+.date-chevron { margin-left: auto; color: #8492a4; transition: transform .15s; }
+.date-chevron.opened { transform: rotate(180deg); }
+.research-calendar {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 342px; max-width: min(342px, calc(100vw - 28px));
+  padding: 14px; border: 1px solid #354053; background: #161c26;
+  border-radius: 14px; box-shadow: 0 18px 52px rgba(0,0,0,.62);
+}
+.calendar-month-navigation { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+.calendar-month-selectors { display: flex; justify-content: center; gap: 6px; flex: 1; }
+.calendar-month-selectors select {
+  min-width: 75px; height: 35px; padding: 0 6px; border-radius: 7px;
+  border: 1px solid #364253; color: #e7eaf0; background: #202938; cursor: pointer;
+}
+.controls .calendar-month-navigation > button {
+  height: 34px; width: 34px; display: grid; place-items: center; padding: 0;
+  background: #202938; border: 1px solid #364253; border-radius: 7px;
+}
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.calendar-weekday { text-align: center; padding: 5px 0 9px; font-size: 11px; color: #8390a2; }
+.calendar-blank { min-height: 38px; }
+.controls .calendar-grid .calendar-day {
+  position: relative; display: flex; justify-content: center; align-items: center;
+  width: 100%; min-width: 0; height: 38px; padding: 0 0 3px;
+  border: 1px solid transparent; border-radius: 8px;
+  font-size: 12px; color: #d4dde8; background: transparent; cursor: pointer;
+}
+.controls .calendar-grid .calendar-day.weekend { color: #8b96a4; }
+.controls .calendar-grid .calendar-day:hover { color: white; background: #283548; border-color: #48667f; }
+.controls .calendar-grid .calendar-day.today { border-color: #405568; }
+.controls .calendar-grid .calendar-day.selected { background: #225a68; border-color: #64bfce; color: white; font-weight: 700; }
+.calendar-research-dot {
+  position: absolute; bottom: 4px; left: calc(50% - 2px);
+  display: block; width: 4px; height: 4px; border-radius: 50%;
+  background: #6bd4a6;
+}
+.calendar-footer { display: flex; justify-content: space-between; align-items: center; gap: 4px; margin-top: 12px; padding-top: 11px; border-top: 1px solid #303a4b; }
+.calendar-footer small { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 10px; color: #8492a5; }
+.calendar-footer small .calendar-research-dot { position: static; }
+.calendar-footer > div { display: flex; gap: 6px; }
+.controls .calendar-footer button { height: 31px; padding: 0 7px; font-size: 11px; background: #202938; border-color: #364253; }
+.controls .calendar-footer button:hover { color: #c3e9f1; border-color: #64bfce; }
+@media (max-width: 560px) {
+  .research-date-picker { flex: 1; min-width: 0; }
+  .controls .research-date-trigger { min-width: 0; width: 100%; }
+  .research-calendar { right: auto; left: 0; }
+}
