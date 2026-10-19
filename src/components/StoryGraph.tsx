@@ -21,7 +21,7 @@ function displayEdges(edges: GEdge[], nodesById: Map<string, GNode>): DisplayEdg
     const target = nodesById.get(edge.target);
     if (!source || !target) return;
 
-    if (edge.label === 'IN_THEME') {
+    if (['IN_THEME', 'RESEARCH_THEME', 'PLAYS_ROLE', 'BUSINESS_RELATED_TO'].includes(edge.label)) {
       const membership = source.kind === 'Theme' && target.kind === 'Stock'
         ? { source: edge.source, target: edge.target }
         : source.kind === 'Stock' && target.kind === 'Theme'
@@ -101,7 +101,7 @@ export function StoryGraph({
   );
   const edges = useMemo(() => displayEdges(story.edges, nodesById), [story.edges, nodesById]);
   const layers = useMemo(() => {
-    const events = story.nodes.filter((node) => node.kind === 'Event').sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'));
+    const events = story.nodes.filter((node) => node.kind === 'Event').sort((a, b) => String(a.label??'').localeCompare(String(b.label??''), 'zh-CN'));
     const themes = sortByConnections(story.nodes.filter((node) => node.kind === 'Theme'), story.nodes, edges, events);
     const stocks = sortByConnections(story.nodes.filter((node) => node.kind === 'Stock'), story.nodes, edges, themes);
     return { Event: events, Theme: themes, Stock: stocks };
@@ -158,7 +158,7 @@ export function StoryGraph({
             viewBox={`0 0 ${W} ${height}`}
             className="story-svg"
             role="group"
-            aria-label="市场关系图：催化事件影响题材或个股，题材包含个股"
+            aria-label="市场关系图：事件影响和股票题材业务关系"
           >
             <defs>
               <marker id="arrow-affects" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -236,9 +236,10 @@ export function StoryGraph({
                     : '题材';
               }
               const maxLabelLength = Math.floor((size.width - 26) / 13);
-              const visibleLabel = node.label.length > maxLabelLength
-                ? `${node.label.slice(0, maxLabelLength - 1)}…`
-                : node.label;
+              const nodeLabel = String(node.label ?? node.id);
+              const visibleLabel = nodeLabel.length > maxLabelLength
+                ? `${nodeLabel.slice(0, maxLabelLength - 1)}…`
+                : nodeLabel;
               return (
                 <g
                   key={node.id}
