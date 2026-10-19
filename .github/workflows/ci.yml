@@ -2,7 +2,7 @@ name: research-platform-frontend-ci
 
 on:
   push:
-    branches: [research-platform-v0.3]
+    branches: [main, research-platform-v0.3]
   pull_request:
 
 jobs:
