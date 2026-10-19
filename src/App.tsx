@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Database, Network, Newspaper, Target, RefreshCw } from 'lucide-react';
 import { api } from './api';
 import type { FocusStock, GNode, MarketStock, OpportunityItem, OpportunityResponse, Overview, Story, Theme, Timeline as T } from './types';
@@ -7,33 +7,39 @@ import { Timeline } from './components/Timeline';
 import { MarketBoard } from './components/MarketBoard';
 import { OpportunityBoard } from './components/OpportunityBoard';
 import { ResearchConsole } from './components/ResearchConsole';
+import { ResearchDatePicker } from './components/ResearchDatePicker';
 
 function todayAsNumber() {
   const d = new Date();
   return Number(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`);
 }
-function toDateInput(value: number) { const raw = String(value); return raw.length === 8 ? raw.slice(0,4)+'-'+raw.slice(4,6)+'-'+raw.slice(6,8) : ''; }
 const roleNames: Record<string,string> = { leader:'龙头',branch_leader:'分支龙头',frontline:'前排',short_frontline:'短线前排',trend_core:'趋势核心',trend_anchor:'趋势中军',capacity_core:'容量核心',risk_anchor:'风险观察' };
 function formatScore(score?: number|string){const value=Number(score);if(!Number.isFinite(value))return '—';return (Math.abs(value)<=1?value*100:value).toFixed(1);}
 function formatConfidence(confidence?: number|string){const value=Number(confidence);if(!Number.isFinite(value))return '—';return `${(Math.abs(value)<=1?value*100:value).toFixed(0)}%`;}
 
 export default function App(){
   const initialDate=todayAsNumber();
-  const [date,setDate]=useState(initialDate); const [dateInput,setDateInput]=useState(toDateInput(initialDate));
+  const [date,setDate]=useState(initialDate);
+  const [availableDates,setAvailableDates]=useState<number[]>([]);
+  const manuallyPickedDate=useRef(false);
+  const requestSequence=useRef(0);
   const [overview,setOverview]=useState<Overview|null>(null); const [themes,setThemes]=useState<Theme[]>([]); const [marketStocks,setMarketStocks]=useState<MarketStock[]>([]);
   const [opportunities,setOpportunities]=useState<OpportunityResponse|null>(null); const [story,setStory]=useState<Story>({nodes:[],edges:[]});
   const [selectedNode,setSelectedNode]=useState<GNode|null>(null); const [stock,setStock]=useState(''); const [timeline,setTimeline]=useState<T[]>([]);
   const [loading,setLoading]=useState(false); const [error,setError]=useState('');
 
-  const load=async()=>{
+  const load=async(selectedDate:number)=>{
+    const requestId=++requestSequence.current;
     setLoading(true);setError('');
     const results=await Promise.allSettled([
-      api.overview(date),api.themes(date,100),api.stocks(date),api.story(date),api.opportunities(date),
+      api.overview(selectedDate),api.themes(selectedDate,100),api.stocks(selectedDate),
+      api.story(selectedDate),api.opportunities(selectedDate),
     ] as const);
+    if(requestId!==requestSequence.current)return; // ignore older date's slower responses
     const failures:string[]=[];
     const names=['市场概览','题材','活跃股票','关系图','机会排序'];
     results.forEach((result,index)=>{
-      if(result.status==='rejected') failures.push(`${names[index]}：${String(result.reason)}`);
+      if(result.status==='rejected')failures.push(`${names[index]}：${String(result.reason)}`);
     });
     if(results[0].status==='fulfilled')setOverview(results[0].value);
     if(results[1].status==='fulfilled')setThemes(results[1].value);
@@ -43,7 +49,21 @@ export default function App(){
     if(failures.length)setError(`部分接口读取失败（其他区域仍可使用）：${failures.join('；')}`);
     setLoading(false);
   };
-  useEffect(()=>{setOverview(null);setThemes([]);setMarketStocks([]);setOpportunities(null);setStory({nodes:[],edges:[],focus:[]});setSelectedNode(null);setStock('');setTimeline([]);void load();},[date]);
+  useEffect(()=>{
+    let cancelled=false;
+    void api.researchDates().then(({dates,latest})=>{
+      if(cancelled)return;
+      setAvailableDates(dates);
+      // Prefer a day with real research, but never override the user's own selection.
+      if(!manuallyPickedDate.current&&latest)setDate(latest);
+    }).catch(()=>{/* Fall back to today's date if the dates endpoint is unavailable. */});
+    return()=>{cancelled=true;};
+  },[]);
+  useEffect(()=>{
+    setOverview(null);setThemes([]);setMarketStocks([]);setOpportunities(null);
+    setStory({nodes:[],edges:[],focus:[]});setSelectedNode(null);setStock('');setTimeline([]);
+    void load(date);
+  },[date]);
 
   const selectNode=async(node:GNode)=>{setSelectedNode(node);setError('');if(node.kind!=='Stock'){setStock('');setTimeline([]);return;}const code=String(node.properties.code??node.id.replace('stock:',''));setStock(code);try{setTimeline(await api.timeline(code));}catch(cause){setError(String(cause));}};
   const selectTheme=(theme:Theme)=>{void selectNode({id:'theme:'+theme.theme_id,label:theme.name,kind:'Theme',properties:{theme_id:theme.theme_id,active_count:theme.active_count,sample_codes:theme.sample_codes}});};
@@ -55,7 +75,7 @@ export default function App(){
   const kindLabel=selectedNode?.kind==='Stock'?'股票':selectedNode?.kind==='Theme'?'题材':selectedNode?.kind==='Event'?'事件':'';
 
   return <main>
-    <header><div><span className="eyebrow">STOCK_GRAPH / MULTI-AGENT RESEARCH PLATFORM</span><h1>A股研究智能体平台</h1><p>Temporal GraphRAG × 归因 × 短线结构 × 产业研究 × 决策排序。</p></div><div className="controls"><label className="date-control"><span className="sr-only">选择交易日</span><input type="date" aria-label="选择交易日" value={dateInput} onChange={event=>{const next=event.target.value;setDateInput(next);if(next)setDate(Number(next.replaceAll('-','')));}}/></label><button type="button" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/>{loading?'加载中':'刷新数据'}</button></div></header>
+    <header><div><span className="eyebrow">STOCK_GRAPH / MULTI-AGENT RESEARCH PLATFORM</span><h1>A股研究智能体平台</h1><p>Temporal GraphRAG × 归因 × 短线结构 × 产业研究 × 决策排序。</p></div><div className="controls"><ResearchDatePicker value={date} availableDates={availableDates} onChange={(next)=>{manuallyPickedDate.current=true;setDate(next);}}/><button type="button" onClick={()=>void load(date)} disabled={loading}><RefreshCw size={16}/>{loading?'加载中':'刷新数据'}</button></div></header>
     {error&&<div className="error" role="alert">{error}</div>}
     {!loading&&!error&&overview&&overview.active_stocks===0&&marketStocks.length===0&&<div className="error" role="status">当前日期 {date} 没有可展示的已验证研究数据。请切换到实际完成研究的交易日；如果已经运行成功，请检查后端 Neo4j 投影。</div>}
     <section className="cards" aria-label="市场概览">{cards.map(([name,value,Icon])=><div className="card" key={name}><Icon size={20}/><span>{name}</span><strong>{value}</strong></div>)}</section>
